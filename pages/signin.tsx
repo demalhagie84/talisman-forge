@@ -14,30 +14,20 @@ export default function SignIn() {
     }
   }, [router, status]);
 
-  const handleGitHubSignIn = async () => {
-    setErrorMessage(null);
-    setIsSubmitting(true);
+    const handleGitHubSignIn = async () => {
+          setErrorMessage(null);
+              setIsSubmitting(true);
 
-    try {
-      const result = await signIn("github", {
-        callbackUrl: "/dashboard",
-        redirect: false,
-      });
-
-      if (result?.error) {
-        throw new Error("GitHub sign-in failed. Please try again.");
-      }
-
-      await router.replace("/dashboard");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "GitHub sign-in failed. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+                  try {
+                        await signIn("github", { callbackUrl: "/dashboard" });
+                            } catch (error) {
+                                  setErrorMessage(
+                                          error instanceof Error ? error.message : "GitHub sign-in failed. Please try again."
+                                                );
+                                                      setIsSubmitting(false);
+                                                          }
+                                                            };
+                                                            
   return (
     <main
       style={{
