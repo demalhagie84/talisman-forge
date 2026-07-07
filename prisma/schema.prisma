@@ -1,0 +1,204 @@
+// Talisman Forge Production-Ready Database Schema
+// Supports: Authentication, Subscriptions, Talisman Generation, User Profiles
+
+datasource db {
+  provider = "postgresql"
+    url      = env("DATABASE_URL")
+    }
+
+    generator client {
+      provider = "prisma-client-js"
+      }
+
+      // User model with authentication and profile info
+      model User {
+        id            String    @id @default(cuid())
+          email         String    @unique
+            emailVerified DateTime?
+              name          String?
+                image         String?
+                  bio           String?
+                    createdAt     DateTime  @default(now())
+                      updatedAt     DateTime  @updatedAt
+
+                        // Relationships
+                          accounts      Account[]
+                            sessions      Session[]
+                              subscriptions Subscription[]
+                                talismans     Talisman[]
+                                  preferences   UserPreferences?
+
+                                    @@index([email])
+                                    }
+
+                                    // NextAuth authentication accounts
+                                    model Account {
+                                      id                 String  @id @default(cuid())
+                                        userId             String
+                                          type               String
+                                            provider           String
+                                              providerAccountId  String
+                                                refresh_token      String?  @db.Text
+                                                  access_token       String?  @db.Text
+                                                    expires_at         Int?
+                                                      token_type         String?
+                                                        scope              String?
+                                                          id_token           String?  @db.Text
+                                                            session_state      String?
+
+                                                              user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+                                                                @@unique([provider, providerAccountId])
+                                                                  @@index([userId])
+                                                                  }
+
+                                                                  // NextAuth sessions
+                                                                  model Session {
+                                                                    id           String   @id @default(cuid())
+                                                                      sessionToken String   @unique
+                                                                        userId       String
+                                                                          expires      DateTime
+                                                                            user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+                                                                              @@index([userId])
+                                                                              }
+
+                                                                              // Email verification tokens
+                                                                              model VerificationToken {
+                                                                                identifier String
+                                                                                  token      String   @unique
+                                                                                    expires    DateTime
+
+                                                                                      @@unique([identifier, token])
+                                                                                      }
+
+                                                                                      // User preferences and settings
+                                                                                      model UserPreferences {
+                                                                                        id                String   @id @default(cuid())
+                                                                                          userId            String   @unique
+                                                                                            user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+                                                                                              theme             String   @default("light") // light, dark, auto
+                                                                                                emailNotifications Boolean  @default(true)
+                                                                                                  language          String   @default("en")
+                                                                                                    createdAt         DateTime @default(now())
+                                                                                                      updatedAt         DateTime @updatedAt
+                                                                                                      
+                                                                                                        @@index([userId])
+                                                                                                        }
+                                                                                                        
+                                                                                                        // Subscription management
+                                                                                                        model Subscription {
+                                                                                                          id                String    @id @default(cuid())
+                                                                                                            userId            String
+                                                                                                              user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+                                                                                                                
+                                                                                                                  // Stripe integration
+                                                                                                                    stripeCustomerId  String?   @unique
+                                                                                                                      stripeSubId       String?   @unique
+                                                                                                                        stripePriceId     String?
+                                                                                                                          
+                                                                                                                            // Subscription tier
+                                                                                                                              tier              SubscriptionTier @default(FREE)
+                                                                                                                                status            SubscriptionStatus @default(ACTIVE)
+                                                                                                                                  
+                                                                                                                                    // Billing dates
+                                                                                                                                      currentPeriodStart DateTime?
+                                                                                                                                        currentPeriodEnd  DateTime?
+                                                                                                                                          canceledAt        DateTime?
+                                                                                                                                            
+                                                                                                                                              // Usage tracking
+                                                                                                                                                talismansGenerated Int     @default(0)
+                                                                                                                                                  maxTalismansPerMonth Int  @default(0) // 0 = unlimited
+                                                                                                                                                    
+                                                                                                                                                      createdAt         DateTime  @default(now())
+                                                                                                                                                        updatedAt         DateTime  @updatedAt
+                                                                                                                                                        
+                                                                                                                                                          @@index([userId])
+                                                                                                                                                            @@index([stripeCustomerId])
+                                                                                                                                                            }
+                                                                                                                                                            
+                                                                                                                                                            // Subscription tiers
+                                                                                                                                                            enum SubscriptionTier {
+                                                                                                                                                              FREE        // 3 talismans/month
+                                                                                                                                                                PREMIUM     // 100 talismans/month, $9.99/mo
+                                                                                                                                                                  PRO         // Unlimited, $24.99/mo
+                                                                                                                                                                  }
+                                                                                                                                                                  
+                                                                                                                                                                  enum SubscriptionStatus {
+                                                                                                                                                                    ACTIVE
+                                                                                                                                                                      PAUSED
+                                                                                                                                                                        CANCELED
+                                                                                                                                                                          PAST_DUE
+                                                                                                                                                                          }
+                                                                                                                                                                          
+                                                                                                                                                                          // Talisman generations - core product
+                                                                                                                                                                          model Talisman {
+                                                                                                                                                                            id            String    @id @default(cuid())
+                                                                                                                                                                              userId        String
+                                                                                                                                                                                user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+                                                                                                                                                                                  
+                                                                                                                                                                                    // Talisman properties
+                                                                                                                                                                                      name          String    // Custom name given by user
+                                                                                                                                                                                        intention     String    @db.Text // Original intention/request
+                                                                                                                                                                                          element       String    // Fire, Water, Air, Earth, Spirit
+                                                                                                                                                                                            weekday       String    // Planetary correspondence
+                                                                                                                                                                                              
+                                                                                                                                                                                                // Magic square data
+                                                                                                                                                                                                  squareSize    Int       // 3x3, 4x4, 5x5, 6x6, etc
+                                                                                                                                                                                                    squareData    String    @db.Text // JSON stringified magic square array
+                                                                                                                                                                                                      squareMethod  String    // Siamese, Complement, Strachey
+                                                                                                                                                                                                        
+                                                                                                                                                                                                          // Abjad numerology
+                                                                                                                                                                                                            abjadValue    Int
+                                                                                                                                                                                                              abjadSequence String    @db.Text // JSON array
+                                                                                                                                                                                                                
+                                                                                                                                                                                                                  // SVG and export formats
+                                                                                                                                                                                                                    svgData       String?   @db.Text
+                                                                                                                                                                                                                      pdfUrl        String?
+                                                                                                                                                                                                                        
+                                                                                                                                                                                                                          // Metadata
+                                                                                                                                                                                                                            isPublic      Boolean   @default(false)
+                                                                                                                                                                                                                              isFavorite    Boolean   @default(false)
+                                                                                                                                                                                                                                tags          String[]  @default([])
+                                                                                                                                                                                                                                  description   String?   @db.Text
+                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                      createdAt     DateTime  @default(now())
+                                                                                                                                                                                                                                        updatedAt     DateTime  @updatedAt
+                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                          @@index([userId])
+                                                                                                                                                                                                                                            @@index([isPublic])
+                                                                                                                                                                                                                                              @@fulltext([name, description])
+                                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                              // Ritual guidance (supplementary content)
+                                                                                                                                                                                                                                              model RitualGuidance {
+                                                                                                                                                                                                                                                id            String    @id @default(cuid())
+                                                                                                                                                                                                                                                  element       String    @unique
+                                                                                                                                                                                                                                                    guidance      String    @db.Text
+                                                                                                                                                                                                                                                      ritual        String    @db.Text // How to use the talisman
+                                                                                                                                                                                                                                                        materials     String[]  // What's needed
+                                                                                                                                                                                                                                                          createdAt     DateTime  @default(now())
+                                                                                                                                                                                                                                                            updatedAt     DateTime  @updatedAt
+                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                            // Payment events audit log
+                                                                                                                                                                                                                                                            model PaymentEvent {
+                                                                                                                                                                                                                                                              id            String    @id @default(cuid())
+                                                                                                                                                                                                                                                                userId        String?
+                                                                                                                                                                                                                                                                  type          String    // subscription.created, payment.succeeded, etc
+                                                                                                                                                                                                                                                                    stripeEventId String    @unique
+                                                                                                                                                                                                                                                                      data          String    @db.Text // JSON payload
+                                                                                                                                                                                                                                                                        createdAt     DateTime  @default(now())
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                        // Usage analytics
+                                                                                                                                                                                                                                                                        model UsageAnalytics {
+                                                                                                                                                                                                                                                                          id            String    @id @default(cuid())
+                                                                                                                                                                                                                                                                            userId        String?
+                                                                                                                                                                                                                                                                              eventType     String    // talisman_generated, pdf_exported, etc
+                                                                                                                                                                                                                                                                                metadata      String?   @db.Text // JSON metadata
+                                                                                                                                                                                                                                                                                  createdAt     DateTime  @default(now())
+                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                    @@index([userId])
+                                                                                                                                                                                                                                                                                      @@index([eventType])
+                                                                                                                                                                                                                                                                                      }
