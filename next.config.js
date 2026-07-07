@@ -1,21 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
-        swcMinify: true,
-        compiler: {
+  reactStrictMode: true,
+  compiler: {
     removeConsole: process.env.NODE_ENV === "production",
-      },
-        images: {
+  },
+  images: {
     remotePatterns: [
-{
+      {
         protocol: "https",
-                  hostname: "**",
-          },
-          ],
+        hostname: "**",
       },
-        experimental: {
-    esmExternals: true,
-      },
-        };
+    ],
+  },
+};
 
 module.exports = nextConfig;
