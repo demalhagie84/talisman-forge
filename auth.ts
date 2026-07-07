@@ -1,36 +1,25 @@
 import NextAuth from "next-auth";
-import GitHub from "next-auth/providers/github";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { authConfig } from "./auth.config";
+import { prisma } from "./lib/prisma";
 
 /**
- * Auth.js (next-auth v5) configuration for Talisman Forge.
+ * Full Auth.js (next-auth v5) configuration. Runs in the Node.js runtime.
  *
- * Uses the JWT session strategy so the app builds and runs without a live
- * database connection. When a Postgres database is available you can add the
- * Prisma adapter (@auth/prisma-adapter) and switch to the "database" strategy.
+ * The Prisma adapter is attached only when DATABASE_URL is configured, so the
+ * app still builds and runs in environments without a database (e.g. preview
+ * deployments before the database is provisioned). When a database is present,
+ * users and OAuth accounts are persisted while sessions remain stateless JWTs
+ * (required for Edge middleware compatibility).
  *
  * Required environment variables (see .env.example):
  *   - AUTH_SECRET
  *   - AUTH_GITHUB_ID
  *   - AUTH_GITHUB_SECRET
+ *   - DATABASE_URL (optional; enables persistence)
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
-    }),
-  ],
+  ...authConfig,
+  adapter: process.env.DATABASE_URL ? PrismaAdapter(prisma) : undefined,
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/signin",
-  },
-  callbacks: {
-    // Attach the user id to the session for use in the app.
-    async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
-  },
 });

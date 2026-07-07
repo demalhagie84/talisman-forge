@@ -1,16 +1,14 @@
-import { auth } from "./auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 
 /**
- * Protect the /dashboard route. Unauthenticated users are redirected to the
- * sign-in page by Auth.js (the `pages.signIn` value in auth.ts).
+ * Edge-runtime middleware. Uses the adapter-free Edge-safe config so it can run
+ * on the Edge. The `authorized` callback in auth.config.ts decides access and
+ * redirects unauthenticated users to the sign-in page.
  */
-export default auth((req) => {
-  if (!req.auth) {
-    const signInUrl = new URL("/signin", req.nextUrl.origin);
-    return Response.redirect(signInUrl);
-  }
-});
+export default NextAuth(authConfig).auth;
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  // Run on everything except Next.js internals and static assets.
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
