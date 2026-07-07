@@ -11,9 +11,7 @@
           "forceConsistentCasingInFileNames": true,
           "noEmit": true,
           "resolveJsonModule": true,
-          "moduleResolution": "node",
-          "jsx": "react-jsx",
-          "baseUrl": ".",
+    "moduleResolution": "bundler",          "jsx": "react-jsx",
           "paths": {
                   "@/*": ["./src/*"]
           }
