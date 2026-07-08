@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import ApiKeyPanel from "../components/ApiKeyPanel";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -69,6 +71,15 @@ export default function Dashboard() {
         <p style={{ fontSize: "1rem", lineHeight: 1.7, color: "#e2e8f0" }}>
           Welcome back, {session.user.name ?? "friend"}. Your Talisman Forge workspace is ready for protected rituals and upcoming generation tools.
         </p>
+
+        <nav style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', margin: '1.5rem 0' }}>
+          <Link href='/tools/fire-square' style={{ color: '#fbbf24', fontWeight: 700 }}>Fire Square</Link>
+          <Link href='/tools/daira' style={{ color: '#a5b4fc', fontWeight: 700 }}>Da'ira (Pro)</Link>
+          <Link href='/tools/jaljalutia' style={{ color: '#c4b5fd', fontWeight: 700 }}>Jaljalutia (Pro)</Link>
+        </nav>
+
+        <ApiKeyPanel />
+
 
         {errorMessage ? (
           <p style={{ color: "#fda4af", marginTop: "1rem" }}>{errorMessage}</p>
