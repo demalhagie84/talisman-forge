@@ -1,5 +1,5 @@
 import type { GetServerSideProps, NextPage } from "next";
-import { getToken } from "next-auth/jwt";
+import { auth } from "../../auth";
 import Link from "next/link";
 import { prisma } from "../../lib/prisma";
 import { buildDaira, type DairaResult } from "../../lib/talismanTemplates";
@@ -10,10 +10,10 @@ interface DairaPageProps {
   result: DairaResult | null;
 }
 
-export const getServerSideProps: GetServerSideProps<DairaPageProps> = async ({ req, query }) => {
-  const token = await getToken({ req: req as any, secret: process.env.AUTH_SECRET });
+export const getServerSideProps: GetServerSideProps<DairaPageProps> = async ({ req, res, query }) => {
+  const session = await auth(req as any, res as any);
 
-  if (!token?.email) {
+  if (!session?.user?.email) {
     return {
       redirect: {
         destination: "/signin",
@@ -23,7 +23,7 @@ export const getServerSideProps: GetServerSideProps<DairaPageProps> = async ({ r
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: token.email as string },
+    where: { email: session.user.email as string },
     select: { subscriptions: { select: { tier: true, status: true } } },
   });
 
